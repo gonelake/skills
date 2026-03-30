@@ -1,6 +1,7 @@
 ---
 name: multi-agent
-description: Use when requests involve writing articles, generating news, fetching hotspots, or producing WeChat-style content for a given topic. Triggers include "写文章", "生成新闻", "热点文章", "AI新闻", or any article generation task.
+version: 1.1.0
+description: Use when requests involve writing articles, generating news, fetching hotspots, or producing content for social media (WeChat, Xiaohongshu, etc.). Triggers include "写文章", "生成新闻", "热点文章", "AI新闻", "写推文", "公众号", "小红书", "内容创作", or any article/content generation task.
 location: user
 allowed-tools: Bash, Read
 ---

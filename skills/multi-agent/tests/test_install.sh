@@ -15,10 +15,10 @@ check() {
     local condition="$2"
     if eval "${condition}"; then
         echo "  ✓ ${desc}"
-        ((PASS++))
+        ((++PASS))
     else
         echo "  ✗ ${desc}"
-        ((FAIL++))
+        ((++FAIL))
     fi
 }
 
@@ -31,11 +31,15 @@ check "requirements.txt 存在" "[[ -f '${INSTALL_DIR}/requirements.txt' ]]"
 
 echo ""
 echo "── 检查 Python 依赖 ──────────────────────────────"
-check "Python 可用"          "command -v python3 &>/dev/null || command -v python &>/dev/null"
-
-PYTHON=$(command -v python3 || command -v python)
-check "duckduckgo_search 已安装" "${PYTHON} -c 'import duckduckgo_search' 2>/dev/null"
-check "openai 已安装"           "${PYTHON} -c 'import openai' 2>/dev/null"
+PYTHON=$(command -v python3 || command -v python || true)
+if [[ -z "${PYTHON}" ]]; then
+    echo "  ✗ Python 不可用"
+    ((++FAIL))
+else
+    check "Python 可用"       "true"
+    check "httpx 已安装"      "${PYTHON} -c 'import httpx' 2>/dev/null"
+    check "ddgs 已安装"       "${PYTHON} -c 'from ddgs import DDGS' 2>/dev/null"
+fi
 
 echo ""
 echo "── 检查 Skill 注册 ───────────────────────────────"
@@ -50,7 +54,9 @@ done
 
 echo ""
 echo "── 检查 Demo 模式 ────────────────────────────────"
-check "demo 模式可执行" "${PYTHON} ${INSTALL_DIR}/main.py --demo --topic 'test' --words 100 &>/dev/null"
+if [[ -n "${PYTHON:-}" ]]; then
+    check "demo 模式可执行" "${PYTHON} ${INSTALL_DIR}/main.py --demo --topic 'test' --words 100 &>/dev/null"
+fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
