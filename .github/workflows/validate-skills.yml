@@ -1,0 +1,50 @@
+name: Validate Skills
+
+on:
+  push:
+    paths:
+      - 'skills/**/SKILL.md'
+  pull_request:
+    paths:
+      - 'skills/**/SKILL.md'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate SKILL.md files
+        run: |
+          failed=0
+          for skill_md in skills/*/SKILL.md; do
+            skill=$(dirname "$skill_md" | xargs basename)
+            echo "── 检查 $skill ──"
+
+            # 检查 frontmatter 存在
+            if ! head -1 "$skill_md" | grep -q '^---'; then
+              echo "  ✗ 缺少 YAML frontmatter"
+              ((failed++)); continue
+            fi
+
+            # 检查必填字段
+            for field in name description; do
+              if ! grep -q "^${field}:" "$skill_md"; then
+                echo "  ✗ frontmatter 缺少 '$field' 字段"
+                ((failed++))
+              else
+                echo "  ✓ $field"
+              fi
+            done
+
+            # 检查 install.sh 存在
+            if [[ ! -f "skills/${skill}/install.sh" ]]; then
+              echo "  ✗ 缺少 install.sh"
+              ((failed++))
+            else
+              echo "  ✓ install.sh 存在"
+            fi
+          done
+
+          echo ""
+          [[ $failed -eq 0 ]] && echo "✓ 所有 skill 验证通过" || { echo "✗ 有 $failed 项未通过"; exit 1; }
