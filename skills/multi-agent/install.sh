@@ -50,15 +50,24 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ── 5. 注册到各 AI agent ───────────────────────────────────
-declare -A AGENT_DIRS=(
-    [codebuddy]="${HOME}/.codebuddy/skills"
-    [claude]="${HOME}/.claude/skills"
-    [openclaw]="${HOME}/.openclaw/skills"
-)
+# 兼容 bash 3.x（macOS 自带），不使用关联数组
+AGENTS="codebuddy claude openclaw"
+dir_codebuddy="${HOME}/.codebuddy/skills"
+dir_claude="${HOME}/.claude/skills"
+dir_openclaw="${HOME}/.openclaw/skills"
+
+get_agent_dir() {
+    case "$1" in
+        codebuddy) echo "${dir_codebuddy}" ;;
+        claude)    echo "${dir_claude}" ;;
+        openclaw)  echo "${dir_openclaw}" ;;
+    esac
+}
 
 install_to_agent() {
     local agent="$1"
-    local base_dir="${AGENT_DIRS[$agent]}"
+    local base_dir
+    base_dir="$(get_agent_dir "${agent}")"
     local dest_dir="${base_dir}/${SKILL_NAME}"
     mkdir -p "${dest_dir}"
     cp "${RESOLVED_SKILL}" "${dest_dir}/SKILL.md"
@@ -66,30 +75,31 @@ install_to_agent() {
 }
 
 agent_exists() {
-    local base_dir="${AGENT_DIRS[$1]}"
+    local base_dir
+    base_dir="$(get_agent_dir "$1")"
     [[ -d "${base_dir}" ]] || [[ -d "$(dirname "${base_dir}")" ]]
 }
 
-installed=()
+installed=""
 
-for agent in "${!AGENT_DIRS[@]}"; do
+for agent in ${AGENTS}; do
     case "${TARGET_AGENT}" in
         auto)
             if agent_exists "${agent}"; then
                 install_to_agent "${agent}"
-                installed+=("${agent}")
+                installed="${installed} ${agent}"
             fi
             ;;
         all|"${agent}")
             install_to_agent "${agent}"
-            installed+=("${agent}")
+            installed="${installed} ${agent}"
             ;;
     esac
 done
 
 rm -f "${RESOLVED_SKILL}"
 
-if [[ ${#installed[@]} -eq 0 ]]; then
+if [[ -z "${installed}" ]]; then
     echo "⚠ 未检测到已安装的 agent，请手动指定：" >&2
     echo "  bash install.sh --agent [codebuddy|claude|openclaw|all]" >&2
     exit 1
@@ -98,7 +108,7 @@ fi
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✓ multi-agent skill 安装完成"
-echo "  已注册到: ${installed[*]}"
+echo "  已注册到:${installed}"
 echo "  项目路径: ${INSTALL_DIR}"
 echo ""
 echo "快速体验（demo 模式，无需 API Key）："

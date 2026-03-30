@@ -11,11 +11,19 @@ set -euo pipefail
 SKILL_NAME="multi-agent"
 INSTALL_DIR="${HOME}/.skills/multi-agent"
 
-declare -A AGENT_DIRS=(
-    [codebuddy]="${HOME}/.codebuddy/skills"
-    [claude]="${HOME}/.claude/skills"
-    [openclaw]="${HOME}/.openclaw/skills"
-)
+# 兼容 bash 3.x（macOS 自带），不使用关联数组
+AGENTS="codebuddy claude openclaw"
+dir_codebuddy="${HOME}/.codebuddy/skills"
+dir_claude="${HOME}/.claude/skills"
+dir_openclaw="${HOME}/.openclaw/skills"
+
+get_agent_dir() {
+    case "$1" in
+        codebuddy) echo "${dir_codebuddy}" ;;
+        claude)    echo "${dir_claude}" ;;
+        openclaw)  echo "${dir_openclaw}" ;;
+    esac
+}
 
 TARGET_AGENT="all"
 DELETE_PROJECT=false
@@ -28,14 +36,14 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-removed=()
-for agent in "${!AGENT_DIRS[@]}"; do
-    skill_dir="${AGENT_DIRS[$agent]}/${SKILL_NAME}"
+removed=""
+for agent in ${AGENTS}; do
+    skill_dir="$(get_agent_dir "${agent}")/${SKILL_NAME}"
     case "${TARGET_AGENT}" in
         all|"${agent}")
             if [[ -d "${skill_dir}" ]]; then
                 rm -rf "${skill_dir}"
-                removed+=("${agent}")
+                removed="${removed} ${agent}"
                 echo "✓ 已从 ${agent} 移除: ${skill_dir}"
             fi
             ;;
@@ -47,8 +55,8 @@ if [[ "${DELETE_PROJECT}" == "true" && -d "${INSTALL_DIR}" ]]; then
     echo "✓ 已删除项目代码: ${INSTALL_DIR}"
 fi
 
-if [[ ${#removed[@]} -eq 0 ]]; then
+if [[ -z "${removed}" ]]; then
     echo "未找到已安装的 multi-agent skill"
 else
-    echo "✓ multi-agent skill 已卸载（${removed[*]}）"
+    echo "✓ multi-agent skill 已卸载（${removed}）"
 fi
