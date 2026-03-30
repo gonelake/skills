@@ -11,8 +11,6 @@ multi-agent/
 ├── uninstall.sh      # 卸载脚本
 ├── scripts/
 │   └── link-project.sh   # 开发模式：链接本地项目
-├── config/
-│   └── .env.example      # 环境变量配置模板
 ├── tests/
 │   └── test_install.sh   # 安装验证测试
 └── README.md
