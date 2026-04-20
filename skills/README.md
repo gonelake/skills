@@ -7,6 +7,7 @@
 | Skill | 描述 | 状态 |
 |-------|------|------|
 | [multi-agent](./multi-agent/) | 多智能体写作流水线（热点抓取→撰写→审校） | ✅ 可用 |
+| [memo-bridge](./memo-bridge/) | AI 记忆迁移（CodeBuddy/OpenClaw/Hermes/Claude Code/Cursor/ChatGPT/豆包/Kimi 8 工具互迁） | ✅ 可用 |
 
 ## 添加新 Skill
 
