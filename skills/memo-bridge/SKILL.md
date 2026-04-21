@@ -90,7 +90,7 @@ For **file-based** tools:
 # To Claude Code (appends to CLAUDE.md)
 node dist/cli.js import --to claude-code --input ./memo-bridge.md
 
-# To Hermes Agent (auto-trims to 2200 chars)
+# To Hermes Agent (auto-trims to 2200 UTF-8 bytes)
 node dist/cli.js import --to hermes --input ./memo-bridge.md
 
 # To OpenClaw (appends to MEMORY.md)
@@ -131,6 +131,24 @@ node dist/cli.js migrate --from openclaw --to hermes
 | `--overwrite` | Overwrite existing files instead of appending |
 | `--verbose` | Detailed output |
 
+## Extending with Custom Adapters
+
+Third-party adapters can be registered at runtime via the public registry
+API — useful when a user has a proprietary or yet-unsupported tool:
+
+```typescript
+import { extractorRegistry, importerRegistry, BaseExtractor } from 'memo-bridge';
+
+class MyToolExtractor extends BaseExtractor {
+  readonly toolId = 'my-tool' as any;
+  async extract() { /* ... */ }
+}
+
+extractorRegistry.register('my-tool' as any, () => new MyToolExtractor());
+```
+
+See `references/adapter-guide.md` for the full three-step adapter recipe.
+
 ## Intermediate Format
 
 The standard interchange format is `memo-bridge.md` — Markdown with YAML front matter. See `references/format-spec.md` for the complete specification.
@@ -139,13 +157,26 @@ Key properties:
 - Human-readable (any text editor)
 - LLM-friendly (can be used directly as CLAUDE.md)
 - Git-friendly (plain text, version-trackable)
+- Tool-namespaced `extensions` section preserves tool-specific data
+  (Hermes skills, OpenClaw SOUL/DREAMS, …) across migrations without
+  polluting the common memory lists.
 
 ## Security Features
 
-- **Privacy sanitization**: Automatically redacts 15 types of sensitive information (API keys, passwords, tokens, SSH keys, emails, IPs)
-- **Path validation**: Prevents path traversal and symlink attacks
-- **Content size limits**: 5MB write limit, 10MB read limit
-- **System directory protection**: Blocks writes to `/etc`, `/bin`, `/usr`, etc.
+- **Privacy sanitization**: Automatically redacts 18 types of sensitive
+  information (API keys, passwords, tokens, SSH keys, emails, private
+  IPs, Authorization headers, custom API headers like `X-API-Key`,
+  database connection strings with embedded credentials).
+- **Path validation**: Prevents path traversal and symlink attacks;
+  case-insensitive on Windows so `c:\program files` can't bypass the
+  denylist.
+- **Content size limits**: 5MB write limit, 10MB read limit enforced on
+  every extractor file read (no more unbounded reads).
+- **System directory protection**: Blocks writes to `/etc`, `/bin`,
+  `/usr`, etc. — except OS-managed temp subtrees (`/var/folders/`,
+  `/var/tmp/`, `/private/tmp/`).
+- **Strict tool-id validation**: CLI `--from` / `--to` / `--for` args
+  are validated against the registered tool list before dispatch.
 
 ## Error Handling
 
@@ -162,4 +193,11 @@ To build the CLI before first use:
 cd {project_root}
 npm install
 npm run build
+```
+
+The project has 395 unit tests and a GitHub Actions CI that runs
+`lint → test → build` on every push. To verify the local install:
+
+```bash
+npm test    # ~500ms
 ```
